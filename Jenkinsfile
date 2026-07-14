@@ -5,6 +5,7 @@ pipeline {
     environment {
         APP_NAME = "spring-kube"
         IMAGE_TAG = "${new Date().format('yyyyMMdd')}-${BUILD_NUMBER}"
+        PATH = "/opt/homebrew/bin:/usr/local/bin:$PATH"
     }
 
     stages {
@@ -33,11 +34,27 @@ pipeline {
         }
 
 
+        stage('Check Docker') {
+            steps {
+                sh '''
+                    echo "Checking Docker..."
+                    which docker
+                    docker --version
+                '''
+            }
+        }
+
+
         stage('Build Docker Image') {
             steps {
                 sh """
                     echo "Building Docker image..."
-                    docker build -t ${APP_NAME}:${IMAGE_TAG} .
+
+                    docker build \
+                    -t ${APP_NAME}:${IMAGE_TAG} .
+
+                    echo "Docker image created:"
+                    docker images | grep ${APP_NAME}
                 """
             }
         }
@@ -46,7 +63,7 @@ pipeline {
         stage('Update Kubernetes Deployment') {
             steps {
                 sh """
-                    echo "Updating Kubernetes deployment..."
+                    echo "Updating Kubernetes image..."
 
                     kubectl set image deployment/spring-kube-deployment \
                     spring-kube=${APP_NAME}:${IMAGE_TAG}
@@ -58,7 +75,7 @@ pipeline {
         stage('Verify Kubernetes Deployment') {
             steps {
                 sh """
-                    echo "Waiting for rollout..."
+                    echo "Checking rollout..."
 
                     kubectl rollout status deployment/spring-kube-deployment
 
@@ -74,18 +91,22 @@ pipeline {
     post {
 
         success {
-            echo "================================="
-            echo "Deployment Successful"
-            echo "Image: ${APP_NAME}:${IMAGE_TAG}"
-            echo "================================="
+            echo """
+            =====================================
+            Deployment Successful
+            Image: ${APP_NAME}:${IMAGE_TAG}
+            =====================================
+            """
         }
 
 
         failure {
-            echo "================================="
-            echo "Deployment Failed"
-            echo "Check console logs"
-            echo "================================="
+            echo """
+            =====================================
+            Deployment Failed
+            Check Console Output
+            =====================================
+            """
         }
     }
 }
