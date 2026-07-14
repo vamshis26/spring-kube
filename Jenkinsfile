@@ -16,49 +16,76 @@ pipeline {
             }
         }
 
+
         stage('Build Spring Boot Application') {
             steps {
                 sh '''
-                    mvn clean package -DskipTests
+                    echo "Checking Java version..."
+                    java -version
+
+                    echo "Making Maven wrapper executable..."
+                    chmod +x mvnw
+
+                    echo "Building Spring Boot application..."
+                    ./mvnw clean package -DskipTests
                 '''
             }
         }
 
+
         stage('Build Docker Image') {
             steps {
                 sh """
+                    echo "Building Docker image..."
                     docker build -t ${APP_NAME}:${IMAGE_TAG} .
                 """
             }
         }
 
-        stage('Deploy to Kubernetes') {
+
+        stage('Update Kubernetes Deployment') {
             steps {
                 sh """
+                    echo "Updating Kubernetes deployment..."
+
                     kubectl set image deployment/spring-kube-deployment \
                     spring-kube=${APP_NAME}:${IMAGE_TAG}
                 """
             }
         }
 
-        stage('Verify Deployment') {
+
+        stage('Verify Kubernetes Deployment') {
             steps {
                 sh """
+                    echo "Waiting for rollout..."
+
                     kubectl rollout status deployment/spring-kube-deployment
+
+                    echo "Current pods:"
                     kubectl get pods
                 """
             }
         }
+
     }
+
 
     post {
 
         success {
-            echo "Deployment successful: ${APP_NAME}:${IMAGE_TAG}"
+            echo "================================="
+            echo "Deployment Successful"
+            echo "Image: ${APP_NAME}:${IMAGE_TAG}"
+            echo "================================="
         }
 
+
         failure {
-            echo "Deployment failed"
+            echo "================================="
+            echo "Deployment Failed"
+            echo "Check console logs"
+            echo "================================="
         }
     }
 }
