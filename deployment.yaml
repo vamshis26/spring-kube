@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: spring-kube-deployment
+  labels:
+    app: spring-kube
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: spring-kube
+
+  template:
+    metadata:
+      labels:
+        app: spring-kube
+
+    spec:
+      containers:
+        - name: spring-kube
+          image: spring-kube:3.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8080
