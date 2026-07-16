@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: spring-kube
-          image: spring-kube:4.0
+          image: spring-kube:5.0
           imagePullPolicy: IfNotPresent
 
           ports:
